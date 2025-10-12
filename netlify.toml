@@ -3,12 +3,16 @@
   functions = "netlify/functions"
   publish = "dist/spa"
 
-
 [functions]
- node_bundler = "esbuild"
-  
+  node_bundler = "esbuild"
+
 [[redirects]]
   force = true
   from = "/api/*"
   status = 200
   to = "/.netlify/functions/api/:splat"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
