@@ -20,6 +20,7 @@ export default function Leaderboard() {
             Back
           </Link>
         </div>
+
         <div className="flex items-center justify-center h-64 border border-white/10 rounded-md bg-black/20 text-white/60 text-xl font-semibold">
           Coming Soon
         </div>
