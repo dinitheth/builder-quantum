@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { getReadProvider } from "@/lib/blockchain";
 import { Link } from "react-router-dom";
 
 type Entry = { player: string; score: bigint; timestamp: bigint };
@@ -19,7 +18,9 @@ export default function Leaderboard() {
     const fetchScores = async () => {
       try {
         // Fetch top scores via serverless proxy
-        const top: Entry[] = (await getReadProvider()) ?? [];
+        const res = await fetch("/api/megaeth-rpc");
+        if (!res.ok) throw new Error(`Failed to fetch leaderboard: ${res.statusText}`);
+        const top: Entry[] = (await res.json()) ?? [];
 
         // Sum all scores per unique player address
         const totals = new Map<string, Entry>();
@@ -44,7 +45,7 @@ export default function Leaderboard() {
 
         // Sort by score descending
         const unique = Array.from(totals.values()).sort((a, b) =>
-          Number(b.score - a.score),
+          Number(b.score - a.score)
         );
 
         if (mounted) setRows(unique);
