@@ -6,12 +6,14 @@
 [functions]
   node_bundler = "esbuild"
 
+# Redirect API calls to the correct function
 [[redirects]]
   force = true
-  from = "/api/*"
+  from = "/api/megaeth-rpc"
+  to = "/.netlify/functions/megaeth-rpc"
   status = 200
-  to = "/.netlify/functions/api/:splat"
 
+# SPA fallback
 [[redirects]]
   from = "/*"
   to = "/index.html"
