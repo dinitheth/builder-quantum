@@ -291,9 +291,20 @@ export async function connectWallet(): Promise<{
   return { address, provider: browserProvider };
 }
 
-export function getReadProvider() {
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
-  return new JsonRpcProvider(`${origin}/api/megaeth-rpc`);
+export async function getReadProvider(player?: string) {
+  try {
+    const url = player
+      ? `/.netlify/functions/megaeth-rpc?player=${player}`
+      : `/.netlify/functions/megaeth-rpc`;
+
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Failed to fetch leaderboard: ${res.statusText}`);
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.error("Error fetching from MegaETH proxy:", err);
+    return null;
+  }
 }
 
 export function getContract<T extends any>(signerOrProvider: any) {
