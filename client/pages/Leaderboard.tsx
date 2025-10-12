@@ -22,7 +22,7 @@ export default function Leaderboard() {
         </div>
 
         <div className="flex items-center justify-center h-64 border border-white/10 rounded-md bg-black/20 text-white/60 text-xl font-semibold">
-          Coming Soon
+          Leaderboard Coming Soon
         </div>
       </div>
     </div>
