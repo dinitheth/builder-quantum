@@ -17,18 +17,17 @@ export default function Leaderboard() {
 
     const fetchScores = async () => {
       try {
-        // Fetch top scores via serverless proxy
         const res = await fetch("/api/megaeth-rpc");
-        if (!res.ok) throw new Error(`Failed to fetch leaderboard: ${res.statusText}`);
-        const top: Entry[] = (await res.json()) ?? [];
+        if (!res.ok) throw new Error(res.statusText);
+        const top: Entry[] = await res.json();
 
-        // Sum all scores per unique player address
+        // Sum per unique player
         const totals = new Map<string, Entry>();
         for (const e of top) {
           const addr = e.player.toLowerCase();
           const prev = totals.get(addr);
           if (prev) {
-            const sum = prev.score + e.score;
+            const sum = BigInt(prev.score) + BigInt(e.score);
             totals.set(addr, {
               player: e.player,
               score: sum,
@@ -37,28 +36,26 @@ export default function Leaderboard() {
           } else {
             totals.set(addr, {
               player: e.player,
-              score: e.score,
+              score: BigInt(e.score),
               timestamp: e.timestamp,
             });
           }
         }
 
-        // Sort by score descending
         const unique = Array.from(totals.values()).sort((a, b) =>
           Number(b.score - a.score)
         );
 
         if (mounted) setRows(unique);
-      } catch (e: any) {
-        if (mounted) setError(e?.message || "Failed to load leaderboard");
+      } catch (err: any) {
+        if (mounted) setError(err.message || "Failed to load leaderboard");
       } finally {
         if (mounted) setLoading(false);
       }
     };
 
     fetchScores();
-    const id = setInterval(fetchScores, 5000); // refresh every 5 seconds
-
+    const id = setInterval(fetchScores, 5000);
     return () => {
       mounted = false;
       clearInterval(id);
@@ -66,23 +63,14 @@ export default function Leaderboard() {
   }, []);
 
   return (
-    <div
-      className="min-h-screen text-white"
-      style={{
-        backgroundColor: "#000",
-        backgroundImage:
-          "radial-gradient(ellipse at top, #335476 0%, #31506e 11.1%, #304b67 22.2%, #2f4760 33.3%, #2d4359 44.4%, #2c3f51 55.6%, #2a3a4a 66.7%, #293643 77.8%, #28323d 88.9%, #262e36 100%)",
-      }}
-    >
+    <div className="min-h-screen text-white" style={{
+      backgroundColor: "#000",
+      backgroundImage: "radial-gradient(ellipse at top, #335476 0%, #31506e 11.1%, #304b67 22.2%, #2f4760 33.3%, #2d4359 44.4%, #2c3f51 55.6%, #2a3a4a 66.7%, #293643 77.8%, #28323d 88.9%, #262e36 100%)"
+    }}>
       <div className="max-w-3xl mx-auto px-6 py-10">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold">Leaderboard</h1>
-          <Link
-            to="/"
-            className="text-white/90 hover:text-white underline-offset-4 hover:underline"
-          >
-            Back
-          </Link>
+          <Link to="/" className="text-white/90 hover:text-white underline-offset-4 hover:underline">Back</Link>
         </div>
         {loading && <div>Loading…</div>}
         {error && <div className="text-red-400">{error}</div>}
@@ -98,24 +86,16 @@ export default function Leaderboard() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r, i) => (
+                {rows.length > 0 ? rows.map((r, i) => (
                   <tr key={i} className="border-t border-white/10">
                     <td className="px-4 py-2">{i + 1}</td>
                     <td className="px-4 py-2 font-mono">{shorten(r.player)}</td>
                     <td className="px-4 py-2">{r.score.toString()}</td>
-                    <td className="px-4 py-2">
-                      {new Date(Number(r.timestamp) * 1000).toLocaleString()}
-                    </td>
+                    <td className="px-4 py-2">{new Date(Number(r.timestamp) * 1000).toLocaleString()}</td>
                   </tr>
-                ))}
-                {rows.length === 0 && (
+                )) : (
                   <tr>
-                    <td
-                      className="px-4 py-6 text-center text-white/60"
-                      colSpan={4}
-                    >
-                      No scores yet
-                    </td>
+                    <td colSpan={4} className="px-4 py-6 text-center text-white/60">No scores yet</td>
                   </tr>
                 )}
               </tbody>
