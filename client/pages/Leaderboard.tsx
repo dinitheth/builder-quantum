@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getContract, getReadProvider } from "@/lib/blockchain";
+import { getReadProvider } from "@/lib/blockchain";
 import { Link } from "react-router-dom";
 
 type Entry = { player: string; score: bigint; timestamp: bigint };
@@ -15,11 +15,12 @@ export default function Leaderboard() {
 
   useEffect(() => {
     let mounted = true;
+
     const fetchScores = async () => {
       try {
-        const provider = getReadProvider();
-        const contract = getContract(provider);
-        const top = (await contract.getTopScores(1000)) as Entry[];
+        // Fetch top scores via serverless proxy
+        const top: Entry[] = (await getReadProvider()) ?? [];
+
         // Sum all scores per unique player address
         const totals = new Map<string, Entry>();
         for (const e of top) {
@@ -30,8 +31,7 @@ export default function Leaderboard() {
             totals.set(addr, {
               player: e.player,
               score: sum,
-              timestamp:
-                e.timestamp > prev.timestamp ? e.timestamp : prev.timestamp,
+              timestamp: e.timestamp > prev.timestamp ? e.timestamp : prev.timestamp,
             });
           } else {
             totals.set(addr, {
@@ -41,9 +41,12 @@ export default function Leaderboard() {
             });
           }
         }
+
+        // Sort by score descending
         const unique = Array.from(totals.values()).sort((a, b) =>
           Number(b.score - a.score),
         );
+
         if (mounted) setRows(unique);
       } catch (e: any) {
         if (mounted) setError(e?.message || "Failed to load leaderboard");
@@ -51,8 +54,10 @@ export default function Leaderboard() {
         if (mounted) setLoading(false);
       }
     };
+
     fetchScores();
-    const id = setInterval(fetchScores, 5000);
+    const id = setInterval(fetchScores, 5000); // refresh every 5 seconds
+
     return () => {
       mounted = false;
       clearInterval(id);
@@ -78,9 +83,9 @@ export default function Leaderboard() {
             Back
           </Link>
         </div>
-        {loading ? <div>Loading…</div> : null}
-        {error ? <div className="text-red-400">{error}</div> : null}
-        {!loading && !error ? (
+        {loading && <div>Loading…</div>}
+        {error && <div className="text-red-400">{error}</div>}
+        {!loading && !error && (
           <div className="overflow-x-auto border border-white/10 rounded-md bg-black/20">
             <table className="w-full text-left">
               <thead className="bg-white/5">
@@ -102,7 +107,7 @@ export default function Leaderboard() {
                     </td>
                   </tr>
                 ))}
-                {rows.length === 0 ? (
+                {rows.length === 0 && (
                   <tr>
                     <td
                       className="px-4 py-6 text-center text-white/60"
@@ -111,11 +116,11 @@ export default function Leaderboard() {
                       No scores yet
                     </td>
                   </tr>
-                ) : null}
+                )}
               </tbody>
             </table>
           </div>
-        ) : null}
+        )}
       </div>
     </div>
   );
