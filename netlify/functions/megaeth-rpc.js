@@ -1,29 +1,38 @@
-import { ethers } from "ethers";
+// netlify/functions/megaeth-rpc.js
+const fetch = require("node-fetch");
 
-export async function handler(event) {
+exports.handler = async (event) => {
   try {
-    const player = event.queryStringParameters?.player || null;
+    const player = event.queryStringParameters?.player || "";
 
-    const provider = new ethers.JsonRpcProvider("https://carrot.megaeth.com/rpc");
-    const contractAddress = "0x1C38845ee1240D83B2bec9D5655aaB543fa74b77";
-    const abi = [
-      "function getPlayerBestScore(address player) view returns (uint256)",
-      "function getTopScores(uint256 limit) view returns (tuple(address player,uint256 score,uint256 timestamp)[])"
-    ];
-    const contract = new ethers.Contract(contractAddress, abi, provider);
+    const rpcUrl = "https://carrot.megaeth.com/rpc";
 
-    let result;
-    if (player) {
-      result = await contract.getPlayerBestScore(player);
-    } else {
-      result = await contract.getTopScores(10); // default top 10
-    }
+    const payload = {
+      jsonrpc: "2.0",
+      method: "getTopScores",
+      params: [1000], // top 1000 scores
+      id: 1,
+    };
+
+    const res = await fetch(rpcUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) throw new Error(`RPC error: ${res.statusText}`);
+    const data = await res.json();
 
     return {
       statusCode: 200,
-      body: JSON.stringify(result),
+      body: JSON.stringify(data.result || []),
+      headers: { "Content-Type": "application/json" },
     };
   } catch (err) {
-    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: err.message }),
+      headers: { "Content-Type": "application/json" },
+    };
   }
-}
+};
