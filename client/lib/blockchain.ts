@@ -4,8 +4,11 @@ export const MEGAETH = {
   chainId: 10143,
   chainIdHex: "0x279F",
   name: "Monad Testnet",
-  rpcUrl: "https://testnet-rpc.monad.xyz/",
-  fallbackRpcUrls: [],
+  rpcUrl: "https://testnet-rpc.monad.xyz",
+  fallbackRpcUrls: [
+    "https://monad-testnet.drpc.org",
+    "https://rpc.ankr.com/monad_testnet",
+  ],
   currency: { name: "Monad", symbol: "MON", decimals: 18 },
   explorer: "https://testnet.monadexplorer.com/",
 } as const;
@@ -292,8 +295,8 @@ export async function connectWallet(): Promise<{
 }
 
 export function getReadProvider() {
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
-  return new JsonRpcProvider(`${origin}/api/megaeth-rpc`);
+  // Use direct RPC endpoint (CORS is handled by Monad testnet)
+  return new JsonRpcProvider(MEGAETH.rpcUrl);
 }
 
 export function getContract<T extends any>(signerOrProvider: any) {

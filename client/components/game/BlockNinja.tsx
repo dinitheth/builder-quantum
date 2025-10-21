@@ -81,6 +81,9 @@ export default function BlockNinja({
         const fragRadius = targetRadius / 3;
 
         const canvas = root.querySelector("#c") as HTMLCanvasElement;
+        
+        // Set custom cursor for gameplay
+        canvas.style.cursor = "crosshair";
 
         // Sound effects
         const sfx = {
@@ -1270,7 +1273,57 @@ export default function BlockNinja({
             target.transform();
             target.project();
 
+            const hitTestCount = Math.ceil((pointerSpeed / targetRadius) * 2);
+            for (let ii = 1; ii <= hitTestCount; ii++) {
+              const percent = 1 - ii / hitTestCount;
+              const hitX = pointerScene.x - pointerDelta.x * percent;
+              const hitY = pointerScene.y - pointerDelta.y * percent;
+              const distance = Math.hypot(
+                hitX - (target.projected as any).x,
+                hitY - (target.projected as any).y,
+              );
+              if (distance <= targetHitRadius) {
+                if (!target.hit) {
+                  target.hit = true;
+                  target.xD += pointerDeltaScaled.x * hitDampening;
+                  target.yD += pointerDeltaScaled.y * hitDampening;
+                  target.rotateXD += pointerDeltaScaled.y * 0.001;
+                  target.rotateYD += pointerDeltaScaled.x * 0.001;
+                  const sparkSpeed = 7 + pointerSpeedScaled * 0.125;
+                  if (pointerSpeedScaled > minPointerSpeed) {
+                    target.health--;
+                    incrementScore(10);
+                    playSound(sfx.ninja);
+                    if (target.health <= 0) {
+                      incrementCubeCount(1);
+                      createBurst(target, forceMultiplier);
+                      sparkBurst(hitX, hitY, 8, sparkSpeed);
+                      if (target.wireframe) {
+                        slowmoRemaining = slowmoDuration;
+                        spawnTime = 0;
+                        spawnExtra = 2;
+                      }
+                      targets.splice(i, 1);
+                      returnTarget(target);
+                      continue targetLoop;
+                    } else {
+                      sparkBurst(hitX, hitY, 8, sparkSpeed);
+                      glueShedSparks(target);
+                      updateTargetHealth(target, 0);
+                    }
+                  } else {
+                    incrementScore(5);
+                    playSound(sfx.ninja);
+                    sparkBurst(hitX, hitY, 3, sparkSpeed);
+                  }
+                }
+                continue targetLoop;
+              }
+            }
+            target.hit = false;
+
             // --- Miss detection (Game Over trigger) ---
+            // Check AFTER hit detection so cubes destroyed in same frame don't trigger game over
             if (target.y > centerY + targetHitRadius * 2) {
               const peaked = targetData.hasPeaked === true;
               const timeSinceSpawn =
@@ -1317,54 +1370,6 @@ export default function BlockNinja({
               }
               continue;
             }
-
-            const hitTestCount = Math.ceil((pointerSpeed / targetRadius) * 2);
-            for (let ii = 1; ii <= hitTestCount; ii++) {
-              const percent = 1 - ii / hitTestCount;
-              const hitX = pointerScene.x - pointerDelta.x * percent;
-              const hitY = pointerScene.y - pointerDelta.y * percent;
-              const distance = Math.hypot(
-                hitX - (target.projected as any).x,
-                hitY - (target.projected as any).y,
-              );
-              if (distance <= targetHitRadius) {
-                if (!target.hit) {
-                  target.hit = true;
-                  target.xD += pointerDeltaScaled.x * hitDampening;
-                  target.yD += pointerDeltaScaled.y * hitDampening;
-                  target.rotateXD += pointerDeltaScaled.y * 0.001;
-                  target.rotateYD += pointerDeltaScaled.x * 0.001;
-                  const sparkSpeed = 7 + pointerSpeedScaled * 0.125;
-                  if (pointerSpeedScaled > minPointerSpeed) {
-                    target.health--;
-                    incrementScore(10);
-                    playSound(sfx.ninja);
-                    if (target.health <= 0) {
-                      incrementCubeCount(1);
-                      createBurst(target, forceMultiplier);
-                      sparkBurst(hitX, hitY, 8, sparkSpeed);
-                      if (target.wireframe) {
-                        slowmoRemaining = slowmoDuration;
-                        spawnTime = 0;
-                        spawnExtra = 2;
-                      }
-                      targets.splice(i, 1);
-                      returnTarget(target);
-                    } else {
-                      sparkBurst(hitX, hitY, 8, sparkSpeed);
-                      glueShedSparks(target);
-                      updateTargetHealth(target, 0);
-                    }
-                  } else {
-                    incrementScore(5);
-                    playSound(sfx.ninja);
-                    sparkBurst(hitX, hitY, 3, sparkSpeed);
-                  }
-                }
-                continue targetLoop;
-              }
-            }
-            target.hit = false;
           }
           const fragBackboardZ = backboardZ + fragRadius;
           const fragLeftBound = -width;
