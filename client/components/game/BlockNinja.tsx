@@ -76,12 +76,12 @@ export default function BlockNinja({
         const touchPoints: any[] = [];
         const targetRadius = 40;
         const targetHitRadius = 50;
-        const targetApexThreshold = targetHitRadius * 1.5;
+        const targetApexThreshold = targetHitRadius * 2.1;
         const makeTargetGlueColor = (_target: any) => "rgb(170,221,255)";
         const fragRadius = targetRadius / 3;
 
         const canvas = root.querySelector("#c") as HTMLCanvasElement;
-
+        
         // Set custom cursor for gameplay
         canvas.style.cursor = "crosshair";
 
@@ -98,7 +98,7 @@ export default function BlockNinja({
           try {
             a.currentTime = 0;
             void a.play();
-          } catch (_) { }
+          } catch (_) {}
         };
 
         // 3D camera config
@@ -366,9 +366,9 @@ export default function BlockNinja({
           target.x = v.x * depth;
           target.y = v.y * depth;
         };
-        const PERF_START = (_: any) => { };
-        const PERF_END = (_: any) => { };
-        const PERF_UPDATE = () => { };
+        const PERF_START = (_: any) => {};
+        const PERF_END = (_: any) => {};
+        const PERF_UPDATE = () => {};
 
         function makeCubeModel({ scale = 1 }: any) {
           return {
@@ -1055,7 +1055,7 @@ export default function BlockNinja({
               time: state.game.time,
               isInGame: isInGame(),
             });
-          } catch (e) { }
+          } catch (e) {}
           renderMenus();
         }
         function setScore(score: number) {
@@ -1322,37 +1322,47 @@ export default function BlockNinja({
             }
             target.hit = false;
 
-            // --- Improved Miss detection (Game Over trigger) ---
+            // --- Miss detection (Game Over trigger) ---
+            // Check AFTER hit detection so cubes destroyed in same frame don't trigger game over
             if (target.y > centerY + targetHitRadius * 2) {
               const peaked = targetData.hasPeaked === true;
-              const wasHit = target.hit === true || target.health < target.maxHealth;
-              const timeSinceSpawn = state.game.time - (targetData.spawnTime ?? 0);
-              const livedLongEnough = timeSinceSpawn > 1000; // prevent instant off-screen bugs
+              const timeSinceSpawn =
+                state.game.time - (targetData.spawnTime ?? 0);
+              const livedLongEnough = timeSinceSpawn > 1000; // 1000 ms guard
 
-              // Ignore cubes that are still too new or have already been hit
-              if (!livedLongEnough || wasHit) {
-                // Cleanly remove and recycle the target
+              // If it's fallen off too quickly after being spawned, ignore as a miss.
+              if (!livedLongEnough) {
+                // debug
+                console.log("Ignoring early-offscreen target (too young)", {
+                  spawnTime: targetData.spawnTime,
+                  timeSinceSpawn,
+                  y: target.y,
+                  spawnY: targetData.spawnY,
+                  minY: targetData.minY,
+                  yD: target.yD,
+                  peaked,
+                });
                 targets.splice(i, 1);
                 returnTarget(target);
                 continue;
               }
 
-              // Debug info for clarity
-              console.log("Target offscreen: missed cube detected", {
-                peaked,
+              // Normal path: log why this target is considered a miss before we do anything
+              console.log("Target offscreen: evaluating miss", {
+                spawnTime: targetData.spawnTime,
                 timeSinceSpawn,
-                wasHit,
                 y: target.y,
-                cubeCount: state.game.cubeCount,
+                spawnY: targetData.spawnY,
+                minY: targetData.minY,
+                yD: target.yD,
+                peaked,
               });
 
-              // Remove and recycle target even when missed
               targets.splice(i, 1);
               returnTarget(target);
 
-              // Only trigger Game Over for clearly peaked, unhit cubes
-              if (isInGame() && peaked && !wasHit) {
-                console.log("Triggering endGame() for missed cube", {
+              if (isInGame() && peaked) {
+                console.log("Triggering endGame() from miss detection", {
                   score: state.game.score,
                   time: state.game.time,
                 });
