@@ -87,7 +87,7 @@ export default function Leaderboard() {
             Leaderboard
           </h1>
           <p className="text-white/70 text-sm">
-            Top 10 Players on Monad Testnet
+            Top 10 Players
           </p>
         </div>
 
@@ -131,7 +131,7 @@ export default function Leaderboard() {
                       Player
                     </th>
                     <th className="px-6 py-4 text-right text-xs font-semibold text-white/80 uppercase tracking-wider">
-                      Score
+                      Best Score
                     </th>
                     <th className="px-6 py-4 text-right text-xs font-semibold text-white/80 uppercase tracking-wider">
                       Date & Time
@@ -186,7 +186,7 @@ export default function Leaderboard() {
             to="/"
             className="px-6 py-3 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-lg transition-all hover:scale-105 font-semibold"
           >
-            ← Back to Game
+            🔙 Back to Game
           </Link>
           <button
             onClick={fetchLeaderboard}
